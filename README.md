@@ -2,9 +2,19 @@
 
 #Common commands:
 
-/weather - get wheather in Lisbon on Russian
+/weather - get weather in Lisbon on Russian
 
 /joke - get random joke about Chuck Norris
+
+Notes:
+
+/noteAdd {text} - add new note
+
+/noteShowAll - show all notes
+
+/noteDelete {text} - delete note with special text
+
+/noteDeleteAll - delete all notes
 
 Word game commands:
 
@@ -14,7 +24,7 @@ Word game commands:
 
 /resetWords - reset 3 initial words and show
 
-/setAnswer - try to set word which might be created from letters of initial words
+/setAnswer {word} - try to set word which might be created from letters of initial words
 
 /answers - show all user answers
 
