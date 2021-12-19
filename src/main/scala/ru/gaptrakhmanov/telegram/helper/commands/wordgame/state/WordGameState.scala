@@ -31,7 +31,7 @@ object WordGameState {
           ref.get.map(_.getOrElse(user, GameInfo.empty).wordSet)
 
         override def isEmptySet(user: User): F[Boolean] =
-          ref.get.map(_.getOrElse(user, GameInfo.empty).wordSet.set.isEmpty)
+          ref.get.map(_.getOrElse(user, GameInfo.empty).wordSet.words.isEmpty)
 
         override def resetWordSet(user: User): F[Unit] =
           ref.update(_.removed(user))
@@ -39,7 +39,7 @@ object WordGameState {
         override def saveUserAnswer(user: User, word: String): F[Unit] =
           ref.update(m => {
             val gi = m.getOrElse(user, GameInfo.empty)
-            val uaSet = gi.usersAnswers.set + word
+            val uaSet = gi.usersAnswers.answers + word
             m + (user -> gi.copy(usersAnswers = UsersAnswers(uaSet)))
           })
 

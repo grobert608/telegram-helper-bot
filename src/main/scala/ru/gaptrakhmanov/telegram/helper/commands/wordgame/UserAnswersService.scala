@@ -8,34 +8,25 @@ import ru.gaptrakhmanov.telegram.helper.commands.wordgame.state.WordGameState
 object UserAnswersService {
 
   private def isConsist(word: String, set: Set[String]): Boolean = {
-    val a = word.groupMapReduce(identity)(_ => 1)(_ + _)
-    val b = set.mkString.trim.groupMapReduce(identity)(_ => 1)(_ + _)
-    val containsAllChars = a.keys.toSet.subsetOf(b.keys.toSet)
-    if (containsAllChars) {
-      a.forall(map => {
-        b(map._1) >= map._2
-      })
-    } else {
-      false
-    }
+    val wordInfo = seqToMapOfElementToCout(word)
+    val setInfo = seqToMapOfElementToCout(set.mkString)
+    val containsAllChars = wordInfo.keys.toSet.subsetOf(setInfo.keys.toSet)
+    containsAllChars && wordInfo.forall(map => setInfo(map._1) >= map._2)
   }
+
+  private def seqToMapOfElementToCout[A](as: Seq[A]): Map[A, Int] =
+    as.groupMapReduce(identity)(_ => 1)(_ + _)
 
   def setUserAnswer[F[_] : Sync](state: WordGameState[F], id: Long, word: String): F[String] = {
     val user = User(id)
     for {
       wordSet <- state.getWordSet(user)
-      wordIsConsisted = isConsist(word, wordSet.set)
+      wordIsConsisted = isConsist(word, wordSet.words)
       answer <- if (wordIsConsisted) {
-        for {
-          wordIsReal <- ValidateWordService.isRealEnglishWord(word)
-          ans <- if (wordIsReal) {
-            for {
-              _ <- state.saveUserAnswer(user, word)
-            } yield "Cool! Correct!"
-          } else {
-            Sync[F].delay("Your answer should be a correct English word!")
-          }
-        } yield ans
+        ValidateWordService.isRealEnglishWord(word).ifM(
+          state.saveUserAnswer(user, word).as("Cool! Correct!"),
+          Sync[F].delay("Your answer should be a correct English word!")
+        )
       } else {
         Sync[F].delay("Your answer should be constructed from letters of given words!")
       }
@@ -43,10 +34,7 @@ object UserAnswersService {
   }
 
   def getUserAnswers[F[_] : Sync](state: WordGameState[F], id: Long): F[Set[String]] = {
-    val user = User(id)
-    for {
-      answers <- state.getUserAnswers(user)
-    } yield answers.set
+    state.getUserAnswers(User(id)).map(_.answers)
   }
 
 }

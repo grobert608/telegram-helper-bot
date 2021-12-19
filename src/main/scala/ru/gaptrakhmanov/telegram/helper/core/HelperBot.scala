@@ -43,36 +43,24 @@ class HelperBot[F[_] : Concurrent : Timer : ContextShift](token: String, state: 
   }
 
   onCommand("/weather") { implicit msg =>
-    for {
-      weather <- WeatherService.getWeather
-      _ <- reply(weather)
-    } yield ()
+    WeatherService.getWeather.flatMap(weather => reply(weather)).void
   }
 
   onCommand("/joke") { implicit msg =>
-    for {
-      joke <- JokeService.getJoke
-      _ <- reply(joke)
-    } yield ()
+    JokeService.getJoke.flatMap(joke => reply(joke)).void
   }
 
   onCommand("/getWords") { implicit msg =>
     using(_.from) {
       user =>
-        for {
-          words <- WordInitService.getWords(state, user.id)
-          _ <- reply(words.mkString("\n"))
-        } yield ()
+        WordInitService.getWords(state, user.id).flatMap(words => reply(words.mkString("\n"))).void
     }
   }
 
   onCommand("/resetWords") { implicit msg =>
     using(_.from) {
       user =>
-        for {
-          words <- WordInitService.resetWords(state, user.id)
-          _ <- reply(words.mkString("\n"))
-        } yield ()
+        WordInitService.resetWords(state, user.id).flatMap(words => reply(words.mkString("\n"))).void
     }
   }
 
@@ -80,10 +68,8 @@ class HelperBot[F[_] : Concurrent : Timer : ContextShift](token: String, state: 
     using(_.from) {
       user =>
         withArgs {
-          case Seq(word) => for {
-            words <- UserAnswersService.setUserAnswer(state, user.id, word)
-            _ <- reply(words)
-          } yield ()
+          case Seq(word) =>
+            UserAnswersService.setUserAnswer(state, user.id, word).flatMap(words => reply(words)).void
           case _ =>
             reply("Invalid argument. Usage: /setAnswer apple").void
         }
@@ -93,15 +79,13 @@ class HelperBot[F[_] : Concurrent : Timer : ContextShift](token: String, state: 
   onCommand("/answers") { implicit msg =>
     using(_.from) {
       user =>
-        for {
-          answers <- UserAnswersService.getUserAnswers(state, user.id)
-          _ <- reply(
-            if (answers.isEmpty) {
-              "You have not sent any correct answers!"
-            } else {
-              answers.mkString("\n")
-            })
-        } yield ()
+        UserAnswersService.getUserAnswers(state, user.id).flatMap(answers => reply(
+          if (answers.isEmpty) {
+            "You have not sent any correct answers!"
+          } else {
+            answers.mkString("\n")
+          }).void
+        )
     }
   }
 }

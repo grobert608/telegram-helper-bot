@@ -18,26 +18,12 @@ object WordInitService {
 
   def getWords[F[_] : Sync](state: WordGameState[F], id: Long): F[Set[String]] = {
     val user = User(id)
-    for {
-      isEmptySet <- state.isEmptySet(user)
-      words <- if (isEmptySet) {
-        for {
-          words <- getWordsFromUrl
-          _ <- state.saveWordSet(user, WordSet(words))
-        } yield words
-      } else {
-        for {
-          words <- state.getWordSet(user)
-        } yield words.set
-      }
-    } yield words
+    state.isEmptySet(user).ifM(
+      getWordsFromUrl.flatTap(words => state.saveWordSet(user, WordSet(words))),
+      state.getWordSet(user).map(_.words)
+    )
   }
 
-  def resetWords[F[_] : Sync](state: WordGameState[F], id: Long): F[Set[String]] = {
-    val user = User(id)
-    for {
-      _ <- state.resetWordSet(user)
-      words <- getWords(state, id)
-    } yield words
-  }
+  def resetWords[F[_] : Sync](state: WordGameState[F], id: Long): F[Set[String]] =
+    state.resetWordSet(User(id)).productR(getWords(state, id))
 }

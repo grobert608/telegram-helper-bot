@@ -1,9 +1,8 @@
 package ru.gaptrakhmanov.telegram.helper.commands.weather
 
 import cats.effect.Sync
+import cats.implicits._
 import org.jsoup.Jsoup
-
-import scala.util.Try
 
 object WeatherService {
 
@@ -11,13 +10,8 @@ object WeatherService {
 
   private val weatherUrl = "https://world-weather.ru/pogoda/portugal/%s/"
 
-  def getWeather[F[_] : Sync]: F[String] = {
-    Sync[F].delay(
-      Try(Jsoup.connect(String.format(weatherUrl, city)).get)
-        .toOption.toRight("\"Failed to get weather!\"")
-        .map(_.select("span.dw-into").text.split("Подробнее")(0)) match {
-        case Right(doc) => doc
-        case Left(error) => error
-      })
-  }
+  def getWeather[F[_] : Sync]: F[String] =
+    Sync[F].delay(Jsoup.connect(String.format(weatherUrl, city)).get)
+      .map(_.select("span.dw-into").text.split("Подробнее")(0))
+      .recover(_ => "\"Failed to get weather!\"")
 }
