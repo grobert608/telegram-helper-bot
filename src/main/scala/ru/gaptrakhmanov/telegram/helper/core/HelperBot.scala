@@ -5,14 +5,17 @@ import cats.syntax.flatMap._
 import cats.syntax.functor._
 import com.bot4s.telegram.api.declarative.{Commands, RegexCommands}
 import com.bot4s.telegram.cats.{Polling, TelegramBot}
+import doobie.Transactor
 import org.asynchttpclient.Dsl.asyncHttpClient
 import ru.gaptrakhmanov.telegram.helper.commands.jokes.JokeService
+import ru.gaptrakhmanov.telegram.helper.commands.notes.model.User
+import ru.gaptrakhmanov.telegram.helper.commands.notes.repository.UserRepository
 import ru.gaptrakhmanov.telegram.helper.commands.weather.WeatherService
 import ru.gaptrakhmanov.telegram.helper.commands.wordgame.state.WordGameState
 import ru.gaptrakhmanov.telegram.helper.commands.wordgame.{UserAnswersService, WordInitService}
 import sttp.client3.asynchttpclient.cats.AsyncHttpClientCatsBackend
 
-class HelperBot[F[_] : Concurrent : Timer : ContextShift](token: String, state: WordGameState[F])
+class HelperBot[F[_] : Concurrent : Timer : ContextShift](token: String, state: WordGameState[F], repository: UserRepository[F])
   extends TelegramBot[F](token, AsyncHttpClientCatsBackend.usingClient[F](asyncHttpClient()))
     with Polling[F]
     with Commands[F]
@@ -22,13 +25,18 @@ class HelperBot[F[_] : Concurrent : Timer : ContextShift](token: String, state: 
     reply(
       """
         |Common commands:
-        |/weather - get wheather in Lisbon on Russian
+        |/weather - get weather in Lisbon on Russian
         |/joke - get random joke about Chuck Norris
+        |Notes:
+        |/noteAdd {text} - add new note
+        |/noteShowAll - show all notes
+        |/noteDelete {text} - delete note with special text
+        |/noteDeleteAll - delete all notes
         |Word game commands:
         |/gameRule - show rule of word game
         |/getWords - show 3 initial words
         |/resetWords - reset 3 initial words and show
-        |/setAnswer - try to set word which might be created from letters of initial words
+        |/setAnswer {word} - try to set word which might be created from letters of initial words
         |/answers - show all user answers
         |""".stripMargin).void
   }
@@ -86,6 +94,55 @@ class HelperBot[F[_] : Concurrent : Timer : ContextShift](token: String, state: 
             answers.mkString("\n")
           }).void
         )
+    }
+  }
+
+  onCommand("/noteAdd") { implicit msg =>
+    using(_.from) {
+      user =>
+        withArgs {
+          case words =>
+            repository.insertUser(User(String.valueOf(user.id), words.mkString(" "))).flatMap(_ =>
+              reply("Saved").void)
+          case _ =>
+            reply("Invalid argument. Usage: /noteAdd buy apples").void
+        }
+    }
+  }
+
+  onCommand("/noteShowAll") { implicit msg =>
+    using(_.from) {
+      user =>
+        repository.listAllMessages(user.id).flatMap(
+          words => reply(
+            if (words.isEmpty) {
+              "You have not added any notes!"
+            } else {
+              words.mkString("\n")
+            }
+          ).void
+        )
+    }
+  }
+
+  onCommand("/noteDelete") { implicit msg =>
+    using(_.from) {
+      user =>
+        withArgs {
+          case words =>
+            repository.deleteMessage(User(String.valueOf(user.id), words.mkString(" "))).flatMap(_ =>
+              reply("Deleted").void)
+          case _ =>
+            reply("Invalid argument. Usage: /noteDelete buy apples").void
+        }
+    }
+  }
+
+  onCommand("/noteDeleteAll") { implicit msg =>
+    using(_.from) {
+      user =>
+        repository.deleteAllMessage(user.id).flatMap(_ =>
+          reply("All deleted").void)
     }
   }
 }
