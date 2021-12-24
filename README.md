@@ -28,6 +28,10 @@ Word game commands:
 
 /answers - show all user answers
 
+Notification:
+
+/notificationAdd {data - 2021-12-16_15:00} {text} - set notification
+
 #Game rule:
 You need to get 3 initial word by command /getWords or /resetWords
 
