@@ -1,0 +1,18 @@
+version: "3.8"
+services:
+  postgres:
+    image: "postgres:12.9"
+    environment:
+      POSTGRES_PASSWORD: 123456
+    volumes:
+      - data:/var/lib/postgresql/bot
+
+  app:
+    build: .
+    environment:
+      DB_HOST: postgres
+    depends_on:
+      - postgres
+
+volumes:
+  data:
