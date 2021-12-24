@@ -1,9 +1,11 @@
 plugins {
     id 'scala'
+
+    id 'application'
 }
 
 group 'ru.gaptrakhmanov'
-version '1.0-SNAPSHOT'
+version '1.0'
 
 repositories {
     mavenCentral()
@@ -33,4 +35,8 @@ dependencies {
     implementation group: 'org.tpolecat', name: 'doobie-core_2.13', version: '0.13.4'
 
     implementation group: 'org.tpolecat', name: 'doobie-postgres_2.13', version: '0.13.4'
+}
+
+application {
+    mainClass = 'ru.gaptrakhmanov.telegram.helper.core.Launcher'
 }
