@@ -29,4 +29,8 @@ dependencies {
     implementation group: 'com.softwaremill.sttp.client3', name: 'okhttp-backend_2.13', version: '3.2.3'
 
     implementation group: 'org.jsoup', name: 'jsoup', version: '1.14.3'
+
+    implementation group: 'org.tpolecat', name: 'doobie-core_2.13', version: '0.13.4'
+
+    implementation group: 'org.tpolecat', name: 'doobie-postgres_2.13', version: '0.13.4'
 }
